@@ -1,0 +1,12 @@
+# .NET / Visual Studio
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.pdb
+*.log
+TestResults/
+publish/
+artifacts/
