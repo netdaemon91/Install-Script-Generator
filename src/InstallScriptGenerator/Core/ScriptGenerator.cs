@@ -55,14 +55,15 @@ public static class ScriptGenerator
         }
         yield return "";
 
-        var outputFolder = Path.GetDirectoryName(Path.GetFullPath(outputPath))!;
         for (int index = 0; index < Math.Min(files.Count, limit); index++)
         {
             var file = files[index];
             var suffix = Path.GetExtension(file.FullPath).ToLowerInvariant();
+            // Legacy behavior: portable mode always references the file beside the exported
+            // script/launcher, never preserves any scanned subfolder structure.
             var target = options.UseAbsolutePaths
                 ? Path.GetFullPath(file.FullPath)
-                : Path.GetRelativePath(outputFolder, file.FullPath);
+                : Path.GetFileName(file.FullPath);
 
             if (options.ShowProgressLines)
             {

@@ -350,6 +350,43 @@ public partial class MainWindow : Window
             _ => options.Format
         };
         options = options with { Format = chosenFormat };
+
+        // Portable mode requires every installer beside the exported script/EXE.
+        if (!options.UseAbsolutePaths)
+        {
+            var collisions = _files.GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => group.Count() > 1);
+            if (collisions is not null)
+            {
+                MessageBox.Show(this,
+                    T("Mehrere Installationsdateien haben denselben Namen: " + collisions.Key +
+                      ". Im Modus ohne vollständige Pfade wäre keine eindeutige Zuordnung möglich. " +
+                      "Bitte Dateien umbenennen oder vollständige Pfade aktivieren.",
+                      "Several installers have the same name: " + collisions.Key +
+                      ". Portable mode cannot distinguish them. Rename the files or " +
+                      "enable absolute paths."),
+                    Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(dialog.FileName));
+            if (_files.Any(file => !string.Equals(
+                Path.GetDirectoryName(Path.GetFullPath(file.FullPath)), outputDirectory,
+                StringComparison.OrdinalIgnoreCase)))
+            {
+                var answer = MessageBox.Show(this,
+                    T("Ohne vollständige Pfade erwartet das erzeugte Skript bzw. die EXE " +
+                      "sämtliche Installationsdateien direkt im selben Ordner. " +
+                      "Unterordner werden nicht berücksichtigt und Dateien werden nicht " +
+                      "automatisch kopiert. Trotzdem fortfahren?",
+                      "Without absolute paths, the generated script or EXE expects every " +
+                      "installer in the same folder as itself. Subfolders are ignored " +
+                      "and files are not copied automatically. Continue?"),
+                    Title, MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (answer != MessageBoxResult.Yes) return;
+            }
+        }
+
         PreviewTextBox.Text = ScriptGenerator.Preview(_files, options, dialog.FileName);
         ExportButton.IsEnabled = false;
         StatusText.Text = options.Format == ExportFormat.LauncherExe

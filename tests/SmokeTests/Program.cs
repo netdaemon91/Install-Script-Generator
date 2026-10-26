@@ -40,8 +40,19 @@ try
     Assert(bat.StartsWith("@echo off"), "BAT script header is missing.");
     Assert(bat.Contains("msiexec.exe /i"), "MSI launcher is missing.");
     Assert(bat.Contains("reg.exe import"), "Registry import is missing.");
-    Assert(bat.Contains("%~dp0"), "Relative output paths are missing.");
+    Assert(bat.Contains("%~dp0"), "Portable output path anchor missing.");
+    Assert(bat.Contains("\"%~dp0Install_00000.exe\""),
+        "Portable mode must reference files directly next to the batch script.");
+    Assert(!bat.Contains("%~dp0nested"), "Portable mode must not keep discovered folder names.");
     Assert(bat.Contains("[4003/4003]"), "Last progress line is missing.");
+
+    string absOutput = Path.Combine(root, "output-absolute.bat");
+    await ScriptGenerator.WriteAsync(absOutput, found, batOptions with { UseAbsolutePaths = true });
+    string abs = await File.ReadAllTextAsync(absOutput);
+    Assert(abs.Contains(Path.Combine(root, "nested", "Install_00000.exe")),
+        "Absolute mode must preserve the full original file path.");
+    Assert(!abs.Contains("\"%~dp0Install_00000.exe\""),
+        "Absolute mode must not use the script-relative prefix.");
 
     string psOutput = Path.Combine(root, "output.ps1");
     var psOptions = batOptions with { Format = ExportFormat.PowerShell };
@@ -53,7 +64,11 @@ try
     Assert(ps.Contains("Start-Process -FilePath 'msiexec.exe'"),
         "PowerShell MSI launcher is missing.");
     Assert(ps.Contains("Join-Path -Path $PSScriptRoot"),
-        "PowerShell relative path handling is missing.");
+        "PowerShell script-folder anchoring is missing.");
+    Assert(ps.Contains("-ChildPath 'Install_00000.exe'"),
+        "PowerShell portable mode should emit only the filename.");
+    Assert(!ps.Contains("-ChildPath 'nested\\Install_00000.exe'"),
+        "PowerShell portable mode should not retain scanned subfolders.");
 
     string preview = ScriptGenerator.Preview(found, batOptions, batOutput);
     Assert(preview.Contains("Preview truncated."), "Large preview was not capped.");
