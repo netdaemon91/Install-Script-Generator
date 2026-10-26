@@ -22,6 +22,8 @@ jobs:
         run: dotnet restore src/InstallScriptGenerator/InstallScriptGenerator.csproj
       - name: Build
         run: dotnet build src/InstallScriptGenerator/InstallScriptGenerator.csproj --configuration Release --no-restore
+      - name: Smoke tests
+        run: dotnet run --project tests/SmokeTests/SmokeTests.csproj --configuration Release
       - name: Publish standalone executable
         run: dotnet publish src/InstallScriptGenerator/InstallScriptGenerator.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output artifacts/InstallScriptGenerator
       - name: Upload Windows build
