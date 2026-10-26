@@ -1,0 +1,30 @@
+<Window x:Class="InstallScriptGenerator.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About Install Script Generator" Width="450" Height="370"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Background="#15212C" Foreground="#EBF1F6" FontFamily="Segoe UI">
+  <Border Margin="23" Padding="18" Background="#22303D" CornerRadius="12">
+    <StackPanel>
+      <TextBlock Text="Install Script Generator" FontWeight="Bold" FontSize="21"/>
+      <TextBlock Text="Version 2.0.0-alpha.1" Foreground="#6BD6B5"
+                 FontSize="13" Margin="0,3,0,10"/>
+      <Separator Margin="0,3,0,13"/>
+      <TextBlock x:Name="AuthorLabel" Text="Coded by: NetDaemon" Margin="0,0,0,9"/>
+      <TextBlock x:Name="IdeaLabel" Text="Original idea: NetDaemon" Margin="0,0,0,9"/>
+      <TextBlock Text="Originally created with AutoPlay Media Studio"
+                 Foreground="#B7C8D8" Margin="0,0,0,9" FontSize="12"/>
+      <TextBlock Text="Rebuilt with C# / .NET 10 / WPF"
+                 Foreground="#B7C8D8" Margin="0,0,0,12" FontSize="12"/>
+      <Separator Margin="0,0,0,12"/>
+      <TextBlock Margin="0,0,0,9">
+        <Hyperlink NavigateUri="https://ntdmn.xyz/" RequestNavigate="Link_Navigate"
+                   Foreground="#6BD6B5">https://ntdmn.xyz/</Hyperlink>
+      </TextBlock>
+      <TextBlock TextWrapping="Wrap">
+        <Hyperlink NavigateUri="https://github.com/netdaemon91/Install-Script-Generator"
+                   RequestNavigate="Link_Navigate" Foreground="#6BD6B5">GitHub: Install-Script-Generator</Hyperlink>
+      </TextBlock>
+    </StackPanel>
+  </Border>
+</Window>
