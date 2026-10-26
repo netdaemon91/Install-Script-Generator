@@ -53,3 +53,9 @@ Requires **Windows 10/11** to run. Building locally requires the **.NET 10 SDK**
 **License:** MIT (see [LICENSE](LICENSE)).
 
 The original Install Script Generator v1.3 was written in AutoPlay Media Studio as a learning project. This rewrite requires no AMS runtime.
+
+## Serial / product key management
+
+Click a discovered file to edit its product key. Choose **Save**, **Remove**, or **Copy** to the Windows clipboard. Per-file serials are also saved automatically when changing the selected file or exporting. They are stored as unencrypted, locally readable JSON in `%LOCALAPPDATA%\\InstallScriptGenerator\\serials.json`, by the source file's absolute path.
+
+To reproduce the original AMS v1.3 behavior, enable **Copy serials before launching installers**. The exported script copies the associated key to the clipboard immediately before invoking each installer. PowerShell scripts contain the key as readable text; BAT/CMD uses reversible Base64 encoding for proper command-line escaping. This is **not encryption**: anyone with the exported script can recover the serials. The preview hides key contents, and a warning appears before export. Do not publish generated scripts containing real product keys.

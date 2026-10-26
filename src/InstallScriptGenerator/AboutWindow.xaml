@@ -7,7 +7,7 @@
   <Border x:Name="AboutPanel" Margin="23" Padding="18" Background="#22303D" CornerRadius="12">
     <StackPanel>
       <TextBlock Text="Install Script Generator" FontWeight="Bold" FontSize="21"/>
-      <TextBlock Text="Version 2.0.0-alpha.1" Foreground="#6BD6B5"
+      <TextBlock Text="Version 2.0.0-alpha.2" Foreground="#6BD6B5"
                  FontSize="13" Margin="0,3,0,10"/>
       <Separator Margin="0,3,0,13"/>
       <TextBlock x:Name="AuthorLabel" Text="Coded by: NetDaemon" Margin="0,0,0,9"/>

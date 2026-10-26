@@ -59,6 +59,35 @@ try
     Assert(preview.Contains("Preview truncated."), "Large preview was not capped.");
     Assert(preview.Length < 30000, "Preview grew unexpectedly large.");
 
+    const string serial = "ABCD-%!&'ÄÖÜ";
+    var licensedFile = found.First(file => file.Extension == ".MSI");
+    var serialOptions = batOptions with {
+        IncludeSerials = true,
+        Serials = new Dictionary<string, string> { [licensedFile.FullPath] = serial }
+    };
+    var serialPreview = ScriptGenerator.Preview(found, serialOptions, batOutput);
+    Assert(serialPreview.Contains("Serial configured"), "Serial preview label missing.");
+    Assert(!serialPreview.Contains(serial), "Serial leaked into preview.");
+    await ScriptGenerator.WriteAsync(batOutput, found, serialOptions);
+    bat = await File.ReadAllTextAsync(batOutput);
+    var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(
+        "Set-Clipboard -Value 'ABCD-%!&''ÄÖÜ'"));
+    Assert(bat.Contains(encoded), "Serial clipboard command missing in BAT.");
+    var psWithSerial = psOptions with { IncludeSerials = true, Serials = serialOptions.Serials };
+    await ScriptGenerator.WriteAsync(psOutput, found, psWithSerial);
+    ps = await File.ReadAllTextAsync(psOutput);
+    Assert(ps.Contains("Set-Clipboard -Value 'ABCD-%!&''ÄÖÜ'"),
+        "Serial clipboard command missing in PowerShell.");
+
+    string serialFile = Path.Combine(root, "serials.json");
+    var serialStore = new SerialStore(serialFile);
+    serialStore.Set(licensedFile.FullPath, serial);
+    Assert(new SerialStore(serialFile).Get(licensedFile.FullPath) == serial,
+        "Local serial store roundtrip failed.");
+    serialStore.Set(licensedFile.FullPath, "");
+    Assert(new SerialStore(serialFile).Get(licensedFile.FullPath) == "",
+        "Local serial deletion failed.");
+
     var custom = ScanService.ParseExtensions([".zip"]);
     var zipFiles = await scanner.ScanAsync(root, custom, false, null, CancellationToken.None);
     Assert(zipFiles.Count == 1, "Custom extension scan failed.");
