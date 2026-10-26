@@ -10,6 +10,10 @@ namespace InstallScriptGenerator;
 public partial class MainWindow : Window
 {
     private readonly ScanService _scanner = new();
+    private SerialStore? _serialStore;
+    private string? _serialFile;
+    private bool _serialDirty;
+    private bool _loadingSerial;
     private IReadOnlyList<InstallerFile> _files = Array.Empty<InstallerFile>();
     private CancellationTokenSource? _scanCancellation;
     private bool _dark = true;
@@ -22,8 +26,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         LanguageCombo.SelectedIndex = 0;
+        try { _serialStore = new SerialStore(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Serial data",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         _ready = true;
         ApplyLanguage();
+        SelectSerial(null);
         ApplyTheme();
         PreviewTextBox.Text = T("Ordner auswählen und Suche starten.",
             "Choose a folder and start scanning.");
@@ -59,6 +70,15 @@ public partial class MainWindow : Window
         FilesGrid.Columns[0].Header = T("Datei", "File");
         FilesGrid.Columns[1].Header = T("Typ", "Type");
         FilesGrid.Columns[2].Header = T("Relativer Pfad", "Relative path");
+        SerialTitle.Text = T("Seriennummer / Produktschlüssel", "Serial / product key");
+        UseSerialsCheckBox.Content = T("Schlüssel vor Installerstart kopieren",
+            "Copy serials before launching installers");
+        CopySerialButton.Content = T("Kopieren", "Copy");
+        SaveSerialButton.Content = T("Speichern", "Save");
+        RemoveSerialButton.Content = T("Entfernen", "Remove");
+        if (_serialFile is null)
+            SerialFileLabel.Text = T("Datei aus der Liste auswählen",
+                "Select a file in the list");
         if (_scanCancellation is null)
             StatusText.Text = _files.Count == 0 ? T("Bereit.", "Ready.")
                 : T($"{_files.Count:N0} Dateien gefunden.", $"{_files.Count:N0} files found.");
@@ -122,7 +142,9 @@ public partial class MainWindow : Window
         UseAbsolutePaths: FullPathCheckBox.IsChecked == true,
         ShowProgressLines: ProgressCheckBox.IsChecked == true,
         ShowCompletionDialog: CompletionCheckBox.IsChecked == true,
-        CompletionMessage: CompletionTextBox.Text);
+        CompletionMessage: CompletionTextBox.Text,
+        IncludeSerials: UseSerialsCheckBox.IsChecked == true,
+        Serials: _serialStore?.Snapshot());
 
     private string DefaultOutputPath()
     {
@@ -161,6 +183,7 @@ public partial class MainWindow : Window
 
     private void InvalidateScan()
     {
+        if (!SaveSerial()) return;
         _scanCancellation?.Cancel();
         _files = Array.Empty<InstallerFile>();
         FilesGrid.ItemsSource = null;
@@ -203,6 +226,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!SaveSerial()) return;
         _files = Array.Empty<InstallerFile>();
         FilesGrid.ItemsSource = null;
         ExportButton.IsEnabled = false;
@@ -255,7 +279,20 @@ public partial class MainWindow : Window
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
         if (_files.Count == 0) return;
+        if (!SaveSerial()) return;
         var options = SelectedOptions();
+        if (options.IncludeSerials && _files.Any(item =>
+            options.Serials?.TryGetValue(item.FullPath, out var serial) == true &&
+            !string.IsNullOrWhiteSpace(serial)))
+        {
+            if (MessageBox.Show(this,
+                T("Schlüssel sind im exportierten Skript wiederherstellbar gespeichert " +
+                  "und werden beim Start in die Zwischenablage kopiert. Trotzdem exportieren?",
+                  "Serials are recoverable from exported scripts and copied to the " +
+                  "clipboard at runtime. Export anyway?"),
+                Title, MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                != MessageBoxResult.Yes) return;
+        }
         if (options.Title.Length == 0)
         {
             MessageBox.Show(this, T("Bitte einen Projektnamen eingeben.",
@@ -333,6 +370,88 @@ public partial class MainWindow : Window
         }
     }
 
+    private void FilesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        if (!SaveSerial()) return;
+        SelectSerial((FilesGrid.SelectedItem as InstallerFile)?.FullPath);
+    }
+
+    private void SelectSerial(string? path)
+    {
+        _serialFile = path;
+        _serialDirty = false;
+        _loadingSerial = true;
+        try
+        {
+            bool active = path is not null && _serialStore is not null;
+            SerialTextBox.IsEnabled = active;
+            CopySerialButton.IsEnabled = active;
+            SaveSerialButton.IsEnabled = active;
+            RemoveSerialButton.IsEnabled = active;
+            SerialTextBox.Text = active ? _serialStore!.Get(path!) : "";
+            SerialFileLabel.Text = path is null
+                ? T("Datei aus der Liste auswählen", "Select a file in the list")
+                : Path.GetFileName(path);
+            SerialStatusText.Text = active
+                ? (SerialTextBox.Text.Length == 0 ? T("Kein Schlüssel", "No key")
+                                                    : T("Gespeichert", "Saved"))
+                : "";
+        }
+        finally { _loadingSerial = false; }
+    }
+
+    private void Serial_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSerial || !_ready) return;
+        _serialDirty = true;
+        SerialStatusText.Text = T("Ungespeichert", "Unsaved");
+    }
+
+    private bool SaveSerial()
+    {
+        if (!_serialDirty || _serialFile is null || _serialStore is null) return true;
+        try
+        {
+            _serialStore.Set(_serialFile, SerialTextBox.Text);
+            _serialDirty = false;
+            SerialStatusText.Text = T("Gespeichert", "Saved");
+            UpdatePreview();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, T("Schlüssel konnte nicht gespeichert werden",
+                "Failed to save serial"), MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+    }
+
+    private void SaveSerial_Click(object sender, RoutedEventArgs e) => SaveSerial();
+
+    private void RemoveSerial_Click(object sender, RoutedEventArgs e)
+    {
+        if (_serialFile is null) return;
+        SerialTextBox.Text = "";
+        _serialDirty = true;
+        SaveSerial();
+    }
+
+    private void CopySerial_Click(object sender, RoutedEventArgs e)
+    {
+        if (SerialTextBox.Text.Length == 0) return;
+        try
+        {
+            Clipboard.SetText(SerialTextBox.Text);
+            SerialStatusText.Text = T("In Zwischenablage kopiert", "Copied to clipboard");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, Title,
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void About_Click(object sender, RoutedEventArgs e)
     {
         new AboutWindow(German, _dark) { Owner = this }.ShowDialog();
@@ -340,6 +459,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        SaveSerial();
         _scanCancellation?.Cancel();
         base.OnClosed(e);
     }

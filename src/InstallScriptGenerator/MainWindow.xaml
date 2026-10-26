@@ -156,7 +156,9 @@
         <Grid.RowDefinitions>
           <RowDefinition Height="*"/>
           <RowDefinition Height="14"/>
-          <RowDefinition Height="245"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="12"/>
+          <RowDefinition Height="210"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Background="{DynamicResource PanelBrush}"
                 CornerRadius="9" Padding="12">
@@ -164,6 +166,7 @@
             <TextBlock x:Name="ResultsTitle" DockPanel.Dock="Top" Text="Discovered files"
                        FontSize="15" FontWeight="SemiBold" Margin="2,2,0,10"/>
             <DataGrid x:Name="FilesGrid" AutoGenerateColumns="False"
+                      SelectionMode="Single" SelectionChanged="FilesGrid_SelectionChanged"
                       IsReadOnly="True" CanUserAddRows="False"
                       CanUserDeleteRows="False" HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
@@ -185,7 +188,43 @@
             </DataGrid>
           </DockPanel>
         </Border>
-        <Border Grid.Row="2" Background="{DynamicResource PanelBrush}"
+        <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="9" Padding="12">
+          <StackPanel>
+            <TextBlock x:Name="SerialTitle" Text="Serial / product key"
+                       FontWeight="SemiBold" FontSize="15"/>
+            <TextBlock x:Name="SerialFileLabel" Text="Select a file in the list"
+                       Margin="0,5,0,8" Foreground="{DynamicResource MutedBrush}"
+                       TextTrimming="CharacterEllipsis"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="SerialTextBox" MaxLength="512" IsEnabled="False"
+                       TextChanged="Serial_Changed"/>
+              <Button x:Name="CopySerialButton" Grid.Column="1" Content="Copy"
+                      Margin="8,0,0,0" IsEnabled="False" Click="CopySerial_Click"/>
+              <Button x:Name="SaveSerialButton" Grid.Column="2" Content="Save"
+                      Margin="8,0,0,0" IsEnabled="False" Click="SaveSerial_Click"/>
+              <Button x:Name="RemoveSerialButton" Grid.Column="3" Content="Remove"
+                      Margin="8,0,0,0" IsEnabled="False" Click="RemoveSerial_Click"/>
+            </Grid>
+            <Grid Margin="0,8,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <CheckBox x:Name="UseSerialsCheckBox" Content="Copy serials before launching installers"
+                        IsChecked="True" Margin="0" Checked="Settings_Changed"
+                        Unchecked="Settings_Changed"/>
+              <TextBlock x:Name="SerialStatusText" Grid.Column="1" HorizontalAlignment="Right"
+                         Foreground="{DynamicResource MutedBrush}" FontSize="12"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="4" Background="{DynamicResource PanelBrush}"
                 CornerRadius="9" Padding="12">
           <DockPanel>
             <TextBlock x:Name="PreviewTitle" DockPanel.Dock="Top" Text="Script preview (first 60 files)"
