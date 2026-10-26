@@ -137,6 +137,7 @@ public partial class MainWindow : Window
         {
             1 => ExportFormat.Command,
             2 => ExportFormat.PowerShell,
+            3 => ExportFormat.LauncherExe,
             _ => ExportFormat.Batch
         },
         UseAbsolutePaths: FullPathCheckBox.IsChecked == true,
@@ -150,7 +151,7 @@ public partial class MainWindow : Window
     {
         string suffix = FormatCombo.SelectedIndex switch
         {
-            1 => ".cmd", 2 => ".ps1", _ => ".bat"
+            1 => ".cmd", 2 => ".ps1", 3 => ".exe", _ => ".bat"
         };
         var folder = Directory.Exists(FolderTextBox.Text)
             ? FolderTextBox.Text : Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -304,16 +305,18 @@ public partial class MainWindow : Window
         {
             ExportFormat.Command => ".cmd",
             ExportFormat.PowerShell => ".ps1",
+            ExportFormat.LauncherExe => ".exe",
             _ => ".bat"
         };
         var dialog = new SaveFileDialog
         {
             Title = T("Installationsskript speichern", "Save installation script"),
-            Filter = "Batch (*.bat)|*.bat|Command (*.cmd)|*.cmd|PowerShell (*.ps1)|*.ps1",
+            Filter = "Batch (*.bat)|*.bat|Command (*.cmd)|*.cmd|PowerShell (*.ps1)|*.ps1|EXE launcher (*.exe)|*.exe",
             FilterIndex = options.Format switch
             {
                 ExportFormat.Command => 2,
                 ExportFormat.PowerShell => 3,
+                ExportFormat.LauncherExe => 4,
                 _ => 1
             },
             DefaultExt = ext,
@@ -342,17 +345,26 @@ public partial class MainWindow : Window
         {
             ".cmd" => ExportFormat.Command,
             ".ps1" => ExportFormat.PowerShell,
+            ".exe" => ExportFormat.LauncherExe,
             ".bat" => ExportFormat.Batch,
             _ => options.Format
         };
         options = options with { Format = chosenFormat };
         PreviewTextBox.Text = ScriptGenerator.Preview(_files, options, dialog.FileName);
         ExportButton.IsEnabled = false;
-        StatusText.Text = T("Skript wird geschrieben...", "Writing script...");
+        StatusText.Text = options.Format == ExportFormat.LauncherExe
+            ? T("EXE-Launcher wird erstellt...", "Creating standalone EXE launcher...")
+            : T("Skript wird geschrieben...", "Writing script...");
         try
         {
             var exportOptions = options;
-            await Task.Run(() => ScriptGenerator.WriteAsync(dialog.FileName, _files, exportOptions));
+            if (options.Format == ExportFormat.LauncherExe)
+            {
+                var template = Path.Combine(AppContext.BaseDirectory, "LauncherTemplate.exe");
+                await ExeExporter.WriteAsync(template, dialog.FileName, _files, exportOptions);
+            }
+            else
+                await ScriptGenerator.WriteAsync(dialog.FileName, _files, exportOptions);
             StatusText.Text = T("Skript erfolgreich exportiert.", "Script exported successfully.");
             MessageBox.Show(this, T("Skript gespeichert unter:", "Script saved to:") +
                 Environment.NewLine + dialog.FileName, Title,

@@ -261,6 +261,7 @@
           <ComboBoxItem Content="BAT (.bat)"/>
           <ComboBoxItem Content="CMD (.cmd)"/>
           <ComboBoxItem Content="PowerShell (.ps1)"/>
+          <ComboBoxItem Content="EXE launcher (.exe)"/>
         </ComboBox>
         <Button x:Name="ExportButton" Grid.Column="3" Content="Export script"
                 Style="{StaticResource PrimaryButton}" IsEnabled="False"
