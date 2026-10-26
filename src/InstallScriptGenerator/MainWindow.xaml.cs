@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using InstallScriptGenerator.Core;
 using Microsoft.Win32;
@@ -55,18 +56,27 @@ public partial class MainWindow : Window
         CancelButton.Content = T("Abbrechen", "Cancel");
         AboutButton.Content = T("Über", "About");
         ProjectLabel.Text = T("Projektname", "Project name");
+        ScanSettingsTitle.Text = T("📁  Sucheinstellungen", "📁  Scan settings");
+        ScanStepText.Text = T("Verzeichnissuche", "Directory scan");
+        FilesStepText.Text = T("Gefundene Dateien", "Discovered files");
+        ExportStepText.Text = T("Skript / EXE erstellen", "Script / EXE export");
+        ResultsSearchBox.ToolTip = T("Nach Dateinamen oder Pfad filtern",
+            "Filter by filename or path");
         TypesTitle.Text = T("Dateitypen", "File types");
         CustomCheckBox.Content = T("Eigene Erweiterungen", "Custom extensions");
         OptionsTitle.Text = T("Optionen", "Options");
         RecursiveCheckBox.Content = T("Unterordner durchsuchen", "Include subfolders");
-        FullPathCheckBox.Content = T("Absolute Pfade verwenden", "Use absolute paths");
+        FullPathCheckBox.Content = T("Vollständige Originalpfade verwenden",
+            "Use full original file paths");
+        ApplyPathsHint();
         ProgressCheckBox.Content = T("Fortschritt ausgeben", "Progress messages");
         CompletionCheckBox.Content = T("Abschlussdialog anzeigen", "Completion dialog");
-        ResultsTitle.Text = T("Gefundene Dateien", "Discovered files");
+        ResultsTitle.Text = T($"📂  Gefundene Dateien ({_files.Count:N0})",
+            $"📂  Found files ({_files.Count:N0})");
         PreviewTitle.Text = T("Skriptvorschau (max. 60 Dateien)",
             "Script preview (first 60 files)");
         FormatLabel.Text = T("Exportformat", "Export as");
-        ExportButton.Content = T("Skript exportieren", "Export script");
+        ExportButton.Content = T("Skript / EXE erstellen", "Generate script / EXE");
         FilesGrid.Columns[0].Header = T("Datei", "File");
         FilesGrid.Columns[1].Header = T("Typ", "Type");
         FilesGrid.Columns[2].Header = T("Relativer Pfad", "Relative path");
@@ -85,6 +95,15 @@ public partial class MainWindow : Window
         UpdatePreview();
     }
 
+    private void ApplyPathsHint()
+    {
+        PathsHintText.Text = FullPathCheckBox.IsChecked == true
+            ? T("An: vollständige Originalpfade verwenden.",
+                "On: use full original paths for all installers.")
+            : T("Aus: Installer müssen direkt neben dem Skript liegen.",
+                "Off: installers must be beside the generated script.");
+    }
+
     private void Theme_Click(object sender, RoutedEventArgs e)
     {
         _dark = !_dark;
@@ -94,10 +113,13 @@ public partial class MainWindow : Window
     private void ApplyTheme()
     {
         var colors = _dark
-            ? new[] { "#101820", "#1B2733", "#101C27", "#344658", "#EAF1F7", "#A8B8C7" }
-            : new[] { "#F1F5F9", "#FFFFFF", "#FAFCFF", "#CDD8E3", "#172B3B", "#516575" };
+            ? new[] { "#07151D", "#11242E", "#091B25", "#2A4552", "#F0F8FC",
+                      "#A3B7C4", "#1A3340", "#244351", "#28554D", "#49D959", "#071B16" }
+            : new[] { "#EEF4F8", "#FFFFFF", "#F7FAFD", "#C5D3DC", "#152E3E",
+                      "#526B78", "#E5EEF5", "#D7E8EC", "#CEEFD8", "#218F38", "#FFFFFF" };
         string[] names = ["WindowBrush", "PanelBrush", "FieldBrush",
-                          "BorderBrush", "TextBrush", "MutedBrush"];
+                          "BorderBrush", "TextBrush", "MutedBrush", "PanelAltBrush",
+                          "HoverBrush", "SelectionBrush", "AccentBrush", "ActionTextBrush"];
         for (int i = 0; i < names.Length; i++)
             Resources[names[i]] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[i])!);
         ThemeButton.Content = _dark ? "☀" : "☾";
@@ -174,12 +196,29 @@ public partial class MainWindow : Window
             InvalidateScan();
             return;
         }
+        if (sender == FullPathCheckBox) ApplyPathsHint();
         UpdatePreview();
     }
 
     private void ScanSelection_Changed(object sender, TextChangedEventArgs e)
     {
         if (_ready) InvalidateScan();
+    }
+
+    private void ResultsSearch_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_ready) ApplyResultsSearch();
+    }
+
+    private void ApplyResultsSearch()
+    {
+        if (FilesGrid.ItemsSource is null) return;
+        var query = ResultsSearchBox.Text.Trim();
+        var view = CollectionViewSource.GetDefaultView(FilesGrid.ItemsSource);
+        view.Filter = value => value is InstallerFile item &&
+            (query.Length == 0 ||
+             item.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+             item.RelativePath.Contains(query, StringComparison.OrdinalIgnoreCase));
     }
 
     private void InvalidateScan()
@@ -247,6 +286,9 @@ public partial class MainWindow : Window
                 FolderTextBox.Text, selected, RecursiveCheckBox.IsChecked == true,
                 progress, token);
             FilesGrid.ItemsSource = _files;
+            ApplyResultsSearch();
+            ResultsTitle.Text = T($"📂  Gefundene Dateien ({_files.Count:N0})",
+                $"📂  Found files ({_files.Count:N0})");
             ExportButton.IsEnabled = _files.Count > 0;
             StatusText.Text = T($"{_files.Count:N0} Dateien gefunden.",
                 $"{_files.Count:N0} files found.");
