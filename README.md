@@ -49,9 +49,7 @@ Requires **Windows 10/11** to run. Building locally requires the **.NET 10 SDK**
 
 ## Credits
 
-**Coded by:** NetDaemon  
-**Original Idea:** NetDaemon  
-**Website:** https://ntdmn.xyz/  
+**Original Idea & Code by:** NetDaemon   
 **License:** MIT (see [LICENSE](LICENSE)).
 
 The original Install Script Generator v1.3 was written in AutoPlay Media Studio as a learning project. This rewrite requires no AMS runtime.
