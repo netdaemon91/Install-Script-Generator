@@ -7,7 +7,7 @@
 
 A Windows utility that scans folders and generates installation scripts. Originally created with AutoPlay Media Studio, now rebuilt in **C# / .NET 10 / WPF**.
 
-> **Status:** 2.0.0-alpha.4 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
+> **Status:** 2.0.0-alpha.5 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
 
 ## Features
 
@@ -75,3 +75,7 @@ dotnet publish src/InstallScriptGenerator/InstallScriptGenerator.csproj -c Relea
 ```
 
 The GitHub Actions workflow creates and packages the template automatically.
+
+## UI contrast changes in alpha.5
+
+The selected and dropdown texts in German/English and export-format ComboBoxes now use an explicit high-contrast theme brush. Selection uses a green-tinted background in both themes. Checkboxes use green check marks, and the primary buttons retain green hover styling instead of turning into dark secondary buttons. Theme switching also updates all of these brushes at runtime.
