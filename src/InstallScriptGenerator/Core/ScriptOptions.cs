@@ -13,4 +13,6 @@ public sealed record ScriptOptions(
     bool UseAbsolutePaths,
     bool ShowProgressLines,
     bool ShowCompletionDialog,
-    string CompletionMessage);
+    string CompletionMessage,
+    bool IncludeSerials = false,
+    IReadOnlyDictionary<string, string>? Serials = null);

@@ -12,7 +12,7 @@ public static class ScriptGenerator
         IReadOnlyList<InstallerFile> files, ScriptOptions options, string outputPath)
     {
         var preview = new StringBuilder();
-        foreach (var line in GenerateLines(files, options, outputPath, MaxPreviewItems))
+        foreach (var line in GenerateLines(files, options, outputPath, MaxPreviewItems, preview: true))
             preview.AppendLine(line);
         return preview.ToString();
     }
@@ -26,7 +26,7 @@ public static class ScriptGenerator
         await using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write,
             FileShare.None, bufferSize: 65536, useAsync: true);
         await using var writer = new StreamWriter(stream, encoding);
-        foreach (var line in GenerateLines(files, options, outputPath, int.MaxValue))
+        foreach (var line in GenerateLines(files, options, outputPath, int.MaxValue, preview: false))
         {
             cancellationToken.ThrowIfCancellationRequested();
             await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
@@ -36,7 +36,7 @@ public static class ScriptGenerator
 
     private static IEnumerable<string> GenerateLines(
         IReadOnlyList<InstallerFile> files, ScriptOptions options,
-        string outputPath, int limit)
+        string outputPath, int limit, bool preview)
     {
         bool ps = options.Format == ExportFormat.PowerShell;
         if (ps)
@@ -66,6 +66,30 @@ public static class ScriptGenerator
             {
                 var text = $"[{index + 1}/{files.Count}] {file.Name}";
                 yield return ps ? "Write-Host " + PsQuote(text) : "echo " + CmdEcho(text);
+            }
+
+            if (options.IncludeSerials &&
+                options.Serials?.TryGetValue(file.FullPath, out var serial) == true &&
+                !string.IsNullOrWhiteSpace(serial))
+            {
+                // Original AMS behavior: copy each product key before launching its installer.
+                // EncodedCommand uses reversible Base64 for CMD escaping; it is not encryption.
+                if (preview)
+                    yield return ps ? "# Serial configured (hidden in preview)"
+                                    : "rem Serial configured (hidden in preview)";
+                else if (ps)
+                {
+                    yield return "Write-Host " + PsQuote("Copying serial for " + file.Name);
+                    yield return "Set-Clipboard -Value " + PsQuote(serial);
+                }
+                else
+                {
+                    var command = "Set-Clipboard -Value " + PsQuote(serial);
+                    var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
+                    yield return "echo " + CmdEcho("Copying serial for " + file.Name);
+                    yield return "powershell.exe -NoProfile -NonInteractive -EncodedCommand " + encoded;
+                    yield return "if errorlevel 1 echo [WARNING] Failed to copy serial.";
+                }
             }
 
             if (ps)
