@@ -4,7 +4,8 @@ public enum ExportFormat
 {
     Batch,
     Command,
-    PowerShell
+    PowerShell,
+    LauncherExe
 }
 
 public sealed record ScriptOptions(

@@ -19,14 +19,16 @@ public static class ScriptGenerator
 
     public static async Task WriteAsync(
         string outputPath, IReadOnlyList<InstallerFile> files, ScriptOptions options,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? pathForRelatives = null, bool launcherRoot = false)
     {
         // Windows PowerShell 5.1 requires a BOM for reliable non-ASCII script decoding.
         var encoding = new UTF8Encoding(options.Format == ExportFormat.PowerShell);
         await using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write,
             FileShare.None, bufferSize: 65536, useAsync: true);
         await using var writer = new StreamWriter(stream, encoding);
-        foreach (var line in GenerateLines(files, options, outputPath, int.MaxValue, preview: false))
+        foreach (var line in GenerateLines(files, options, pathForRelatives ?? outputPath, int.MaxValue,
+            preview: false, launcherRoot: launcherRoot))
         {
             cancellationToken.ThrowIfCancellationRequested();
             await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
@@ -36,9 +38,9 @@ public static class ScriptGenerator
 
     private static IEnumerable<string> GenerateLines(
         IReadOnlyList<InstallerFile> files, ScriptOptions options,
-        string outputPath, int limit, bool preview)
+        string outputPath, int limit, bool preview, bool launcherRoot = false)
     {
-        bool ps = options.Format == ExportFormat.PowerShell;
+        bool ps = options.Format is ExportFormat.PowerShell or ExportFormat.LauncherExe;
         if (ps)
         {
             yield return "$ErrorActionPreference = 'Stop'";
@@ -96,7 +98,9 @@ public static class ScriptGenerator
             {
                 yield return options.UseAbsolutePaths
                     ? "$target = " + PsQuote(target)
-                    : "$target = Join-Path -Path $PSScriptRoot -ChildPath " + PsQuote(target);
+                    : "$target = Join-Path -Path " +
+                        (launcherRoot ? "$env:ISG_LAUNCH_DIR" : "$PSScriptRoot") +
+                        " -ChildPath " + PsQuote(target);
                 foreach (var command in PowerShellCommands(suffix, file.Name))
                     yield return command;
             }
