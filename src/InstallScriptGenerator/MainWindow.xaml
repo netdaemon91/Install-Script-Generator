@@ -1,7 +1,7 @@
 <Window x:Class="InstallScriptGenerator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Install Script Generator 2.0" Width="1160" Height="790"
+        Icon="Assets/isg.ico" Title="Install Script Generator 2.0" Width="1160" Height="790"
         MinWidth="940" MinHeight="680" WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBrush}" FontFamily="Segoe UI">
   <Window.Resources>

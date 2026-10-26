@@ -10,5 +10,7 @@
     <RootNamespace>InstallScriptGenerator</RootNamespace>
     <Version>2.0.0-alpha.2</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/isg.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup><Resource Include="Assets/isg.ico" /></ItemGroup>
 </Project>

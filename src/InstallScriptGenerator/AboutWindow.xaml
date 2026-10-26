@@ -1,7 +1,7 @@
 <Window x:Class="InstallScriptGenerator.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="About Install Script Generator" Width="450" Height="370"
+        Icon="Assets/isg.ico" Title="About Install Script Generator" Width="450" Height="370"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
         Background="#15212C" Foreground="#EBF1F6" FontFamily="Segoe UI">
   <Border x:Name="AboutPanel" Margin="23" Padding="18" Background="#22303D" CornerRadius="12">
