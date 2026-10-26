@@ -140,7 +140,33 @@ public partial class MainWindow : Window
 
     private void Settings_Changed(object sender, RoutedEventArgs e)
     {
-        if (_ready) UpdatePreview();
+        if (!_ready) return;
+        if (sender == RecursiveCheckBox || sender == CustomTextBox ||
+            sender == ExeCheckBox || sender == MsiCheckBox ||
+            sender == BatCheckBox || sender == CmdCheckBox ||
+            sender == Ps1CheckBox || sender == Au3CheckBox ||
+            sender == RegCheckBox || sender == VbsCheckBox ||
+            sender == CustomCheckBox)
+        {
+            InvalidateScan();
+            return;
+        }
+        UpdatePreview();
+    }
+
+    private void ScanSelection_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_ready) InvalidateScan();
+    }
+
+    private void InvalidateScan()
+    {
+        _scanCancellation?.Cancel();
+        _files = Array.Empty<InstallerFile>();
+        FilesGrid.ItemsSource = null;
+        ExportButton.IsEnabled = false;
+        PreviewTextBox.Text = T("Bitte Suche erneut starten.", "Run the scan again.");
+        StatusText.Text = T("Suchoptionen geändert.", "Scan options changed.");
     }
 
     private void UpdatePreview()
@@ -283,6 +309,7 @@ public partial class MainWindow : Window
             _ => options.Format
         };
         options = options with { Format = chosenFormat };
+        PreviewTextBox.Text = ScriptGenerator.Preview(_files, options, dialog.FileName);
         ExportButton.IsEnabled = false;
         StatusText.Text = T("Skript wird geschrieben...", "Writing script...");
         try

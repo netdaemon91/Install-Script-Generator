@@ -21,6 +21,13 @@ public partial class AboutWindow : Window
         {
             Background = new SolidColorBrush(Color.FromRgb(241, 245, 249));
             Foreground = new SolidColorBrush(Color.FromRgb(23, 43, 59));
+            AboutPanel.Background = Brushes.White;
+            var muted = new SolidColorBrush(Color.FromRgb(70, 91, 107));
+            HistoryText.Foreground = muted;
+            TechText.Foreground = muted;
+            var link = new SolidColorBrush(Color.FromRgb(15, 119, 101));
+            WebsiteLink.Foreground = link;
+            GitHubLink.Foreground = link;
         }
     }
 

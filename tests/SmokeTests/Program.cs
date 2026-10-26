@@ -47,7 +47,7 @@ try
     var psOptions = batOptions with { Format = ExportFormat.PowerShell };
     await ScriptGenerator.WriteAsync(psOutput, found, psOptions);
     byte[] psBytes = await File.ReadAllBytesAsync(psOutput);
-    Assert(psBytes.AsSpan(0, 3).SequenceEqual([0xEF, 0xBB, 0xBF]),
+    Assert(psBytes.Length >= 3 && psBytes[0] == 0xEF && psBytes[1] == 0xBB && psBytes[2] == 0xBF,
         "PowerShell output must use UTF-8 BOM for Windows PowerShell 5.1.");
     string ps = Encoding.UTF8.GetString(psBytes);
     Assert(ps.Contains("Start-Process -FilePath 'msiexec.exe'"),

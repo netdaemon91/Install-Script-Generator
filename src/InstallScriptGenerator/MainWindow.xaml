@@ -98,7 +98,7 @@
         <TextBlock x:Name="FolderLabel" Grid.Column="0" Text="Source folder"
                    VerticalAlignment="Center" Margin="0,0,11,0"/>
         <TextBox x:Name="FolderTextBox" Grid.Column="1" MinWidth="160"
-                 VerticalAlignment="Center"/>
+                 VerticalAlignment="Center" TextChanged="ScanSelection_Changed"/>
         <Button x:Name="BrowseButton" Grid.Column="2" Content="Browse..."
                 Margin="9,0,0,0" Click="Browse_Click"/>
         <Button x:Name="ScanButton" Grid.Column="3" Content="Scan"
