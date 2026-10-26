@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>InstallScriptGenerator</AssemblyName>
     <RootNamespace>InstallScriptGenerator</RootNamespace>
-    <Version>2.0.0-alpha.3</Version>
+    <Version>2.0.0-alpha.4</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/isg.ico</ApplicationIcon>
   </PropertyGroup>

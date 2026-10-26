@@ -7,7 +7,7 @@
 
 A Windows utility that scans folders and generates installation scripts. Originally created with AutoPlay Media Studio, now rebuilt in **C# / .NET 10 / WPF**.
 
-> **Status:** 2.0.0-alpha.3 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
+> **Status:** 2.0.0-alpha.4 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
 
 ## Features
 
@@ -16,7 +16,7 @@ A Windows utility that scans folders and generates installation scripts. Origina
 - Memory-friendly preview limited to 60 entries; full script output is streamed to disk without re-reading it after each command.
 - Export BAT, CMD or PowerShell (.ps1), with path selection and optional progress output or completion popup.
 - Dedicated handlers for MSI, REG, VBS and AU3 (AutoIt must be installed for AU3 files).
-- German and English interface, Dark/Light switch, About dialog, website and repository links.
+- German and English interface, redesigned three-panel dashboard, searchable results, high-contrast Dark/Light Combobox controls, About dialog, website and repository links.
 - GitHub Actions Windows x64 build, including a self-contained distributable application.
 
 ## Get started
@@ -38,11 +38,12 @@ Requires **Windows 10/11** to run. Building locally requires the **.NET 10 SDK**
 - PS1 files are subject to the target machine's PowerShell execution policy.
 - Exported scripts do not embed software packages; keep the referenced installer files in their expected relative location or select absolute paths.
 - Some uncommon command-interpreter metacharacters in file paths may require manual verification. Test exported scripts on sample data before relying on them.
+- **Path modes (alpha.4):** When "Use full original file paths" is unchecked, all installer filenames are resolved directly beside the generated BAT/CMD/PS1/EXE (portable folder mode, no preserved subdirectories). The app does **not** copy files. When checked, the original absolute installer paths are used. Export will warn if the external files are not next to the exported file and will block duplicate basenames in portable mode.
 
 ## Roadmap
 
 - [x] Migrate original v1.3 scanner and BAT/CMD/PS1 generator to C#.
-- [x] Responsive scanning, preview, bilingual UI and theme toggle.
+- [x] Responsive scanning, preview, bilingual UI, theme toggle and three-column dashboard.
 - [ ] Per-installer arguments, manual ordering, presets and stronger diagnostics.
 - [x] Portable launcher EXE export (embeds the generated script; installer files remain external).
 - [ ] Optional all-in-one EXE bundle with embedded installers.
