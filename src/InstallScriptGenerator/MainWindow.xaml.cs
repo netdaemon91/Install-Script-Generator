@@ -114,12 +114,15 @@ public partial class MainWindow : Window
     {
         var colors = _dark
             ? new[] { "#07151D", "#11242E", "#091B25", "#2A4552", "#F0F8FC",
-                      "#A3B7C4", "#1A3340", "#244351", "#28554D", "#49D959", "#071B16" }
+                      "#A3B7C4", "#1A3340", "#244351", "#17634B", "#49D959", "#071B16",
+                      "#F0F8FC", "#82EE78" }
             : new[] { "#EEF4F8", "#FFFFFF", "#F7FAFD", "#C5D3DC", "#152E3E",
-                      "#526B78", "#E5EEF5", "#D7E8EC", "#CEEFD8", "#218F38", "#FFFFFF" };
+                      "#526B78", "#E5EEF5", "#D7E8EC", "#C9EED6", "#218F38", "#FFFFFF",
+                      "#152E3E", "#176F2D" };
         string[] names = ["WindowBrush", "PanelBrush", "FieldBrush",
                           "BorderBrush", "TextBrush", "MutedBrush", "PanelAltBrush",
-                          "HoverBrush", "SelectionBrush", "AccentBrush", "ActionTextBrush"];
+                          "HoverBrush", "SelectionBrush", "AccentBrush", "ActionTextBrush",
+                          "ComboTextBrush", "AccentHoverBrush"];
         for (int i = 0; i < names.Length; i++)
             Resources[names[i]] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[i])!);
         ThemeButton.Content = _dark ? "☀" : "☾";
