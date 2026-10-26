@@ -60,7 +60,7 @@ try
     Assert(preview.Length < 30000, "Preview grew unexpectedly large.");
 
     const string serial = "ABCD-%!&'ÄÖÜ";
-    var licensedFile = found.First(file => file.Extension == ".MSI");
+    var licensedFile = found.First(file => file.Extension == ".EXE");
     var serialOptions = batOptions with {
         IncludeSerials = true,
         Serials = new Dictionary<string, string> { [licensedFile.FullPath] = serial }
