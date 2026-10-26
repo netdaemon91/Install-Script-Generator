@@ -7,7 +7,7 @@
 
 A Windows utility that scans folders and generates installation scripts. Originally created with AutoPlay Media Studio, now rebuilt in **C# / .NET 10 / WPF**.
 
-> **Status:** 2.0.0-alpha.1 — first C# rebuild. The EXE **exporter** is planned, not yet implemented.
+> **Status:** 2.0.0-alpha.3 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
 
 ## Features
 
@@ -44,7 +44,7 @@ Requires **Windows 10/11** to run. Building locally requires the **.NET 10 SDK**
 - [x] Migrate original v1.3 scanner and BAT/CMD/PS1 generator to C#.
 - [x] Responsive scanning, preview, bilingual UI and theme toggle.
 - [ ] Per-installer arguments, manual ordering, presets and stronger diagnostics.
-- [ ] Portable launcher EXE export.
+- [x] Portable launcher EXE export (embeds the generated script; installer files remain external).
 - [ ] Optional all-in-one EXE bundle with embedded installers.
 
 ## Credits
@@ -59,3 +59,18 @@ The original Install Script Generator v1.3 was written in AutoPlay Media Studio 
 Click a discovered file to edit its product key. Choose **Save**, **Remove**, or **Copy** to the Windows clipboard. Per-file serials are also saved automatically when changing the selected file or exporting. They are stored as unencrypted, locally readable JSON in `%LOCALAPPDATA%\\InstallScriptGenerator\\serials.json`, by the source file's absolute path.
 
 To reproduce the original AMS v1.3 behavior, enable **Copy serials before launching installers**. The exported script copies the associated key to the clipboard immediately before invoking each installer. PowerShell scripts contain the key as readable text; BAT/CMD uses reversible Base64 encoding for proper command-line escaping. This is **not encryption**: anyone with the exported script can recover the serials. The preview hides key contents, and a warning appears before export. Do not publish generated scripts containing real product keys.
+
+## EXE launcher export (alpha.3)
+
+Select **EXE launcher (.exe)** under export format. The generator embeds the PowerShell installation instructions directly in a standalone Windows x64 executable. The EXE requires no additional .NET runtime or Visual Studio installation on the destination machine. Each installer referenced by the launcher must still be available in its original relative location, or must be reachable by absolute path when that option is selected. This is **not yet an all-in-one installer bundle**.
+
+The launcher executes the embedded installation script using Windows PowerShell. License keys are recoverable from the exported EXE, just as they are from exported scripts. Only run installers from sources you trust.
+
+To build the launcher template locally before building the WPF application:
+
+```powershell
+dotnet publish tools/InstallerLauncher/InstallerLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o src/InstallScriptGenerator/Assets
+dotnet publish src/InstallScriptGenerator/InstallScriptGenerator.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+The GitHub Actions workflow creates and packages the template automatically.

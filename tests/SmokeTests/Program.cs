@@ -88,6 +88,31 @@ try
     Assert(new SerialStore(serialFile).Get(licensedFile.FullPath) == "",
         "Local serial deletion failed.");
 
+    string? launcherTemplate = Environment.GetEnvironmentVariable("ISG_LAUNCHER_TEMPLATE");
+    if (!string.IsNullOrEmpty(launcherTemplate))
+    {
+        Assert(File.Exists(launcherTemplate), "Launcher executable was not published.");
+        string marker = Path.Combine(root, "launcher-ok.txt");
+        string installerScript = Path.Combine(root, "MakeMarker.ps1");
+        File.WriteAllText(installerScript,
+            "Set-Content -LiteralPath (Join-Path $env:ISG_LAUNCH_DIR 'launcher-ok.txt') -Value 'OK'");
+        string exeDestination = Path.Combine(root, "my-launcher.exe");
+        await ExeExporter.WriteAsync(launcherTemplate, exeDestination,
+            [new InstallerFile(installerScript, "MakeMarker.ps1")],
+            psOptions with { Format = ExportFormat.LauncherExe, IncludeSerials = false });
+        Assert(File.Exists(exeDestination), "EXE exporter did not write an executable.");
+        using var process = System.Diagnostics.Process.Start(
+            new System.Diagnostics.ProcessStartInfo(exeDestination)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = root
+            }) ?? throw new InvalidOperationException("Could not start generated EXE.");
+        await process.WaitForExitAsync();
+        Assert(process.ExitCode == 0, "Generated EXE returned non-zero exit code.");
+        Assert(File.Exists(marker) && File.ReadAllText(marker).Contains("OK"),
+            "Generated EXE did not execute the embedded script.");
+    }
+
     var custom = ScanService.ParseExtensions([".zip"]);
     var zipFiles = await scanner.ScanAsync(root, custom, false, null, CancellationToken.None);
     Assert(zipFiles.Count == 1, "Custom extension scan failed.");

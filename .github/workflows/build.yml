@@ -18,17 +18,21 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Publish self-contained EXE launcher template
+        run: dotnet publish tools/InstallerLauncher/InstallerLauncher.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true --output src/InstallScriptGenerator/Assets
       - name: Restore
         run: dotnet restore src/InstallScriptGenerator/InstallScriptGenerator.csproj
       - name: Build
         run: dotnet build src/InstallScriptGenerator/InstallScriptGenerator.csproj --configuration Release --no-restore
       - name: Smoke tests
         run: dotnet run --project tests/SmokeTests/SmokeTests.csproj --configuration Release
+        env:
+          ISG_LAUNCHER_TEMPLATE: src/InstallScriptGenerator/Assets/LauncherTemplate.exe
       - name: Publish standalone executable
         run: dotnet publish src/InstallScriptGenerator/InstallScriptGenerator.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output artifacts/InstallScriptGenerator
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: InstallScriptGenerator-2.0.0-alpha.2-win-x64
+          name: InstallScriptGenerator-2.0.0-alpha.3-win-x64
           path: artifacts/InstallScriptGenerator/
           if-no-files-found: error
