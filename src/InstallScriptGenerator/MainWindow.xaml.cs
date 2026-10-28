@@ -138,6 +138,14 @@ public partial class MainWindow : Window
                           "ComboTextBrush", "AccentHoverBrush"];
         for (int i = 0; i < names.Length; i++)
             Resources[names[i]] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colors[i])!);
+
+        var hero = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+        foreach (var (offset, hex) in (_dark
+            ? new[] { (0d, "#173B3E"), (.60d, "#102630"), (1d, "#142F3D") }
+            : new[] { (0d, "#D8F1E5"), (.60d, "#EDF5FA"), (1d, "#E0EFF5") }))
+            hero.GradientStops.Add(new GradientStop(
+                (Color)ColorConverter.ConvertFromString(hex)!, offset));
+        Resources["HeroBrush"] = hero;
         ThemeButton.Content = _dark ? "☀" : "☾";
         ThemeButton.ToolTip = _dark ? T("Hellen Modus aktivieren", "Switch to light mode")
                                     : T("Dunklen Modus aktivieren", "Switch to dark mode");
