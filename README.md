@@ -40,21 +40,6 @@ Requires **Windows 10/11** to run. Building locally requires the **.NET 10 SDK**
 - Some uncommon command-interpreter metacharacters in file paths may require manual verification. Test exported scripts on sample data before relying on them.
 - **Path modes (alpha.4):** When "Use full original file paths" is unchecked, all installer filenames are resolved directly beside the generated BAT/CMD/PS1/EXE (portable folder mode, no preserved subdirectories). The app does **not** copy files. When checked, the original absolute installer paths are used. Export will warn if the external files are not next to the exported file and will block duplicate basenames in portable mode.
 
-## Roadmap
-
-- [x] Migrate original v1.3 scanner and BAT/CMD/PS1 generator to C#.
-- [x] Responsive scanning, preview, bilingual UI, theme toggle and three-column dashboard.
-- [ ] Per-installer arguments, manual ordering, presets and stronger diagnostics.
-- [x] Portable launcher EXE export (embeds the generated script; installer files remain external).
-- [ ] Optional all-in-one EXE bundle with embedded installers.
-
-## Credits
-
-**Original Idea & Code by:** NetDaemon   
-**License:** MIT (see [LICENSE](LICENSE)).
-
-The original Install Script Generator v1.3 was written in AutoPlay Media Studio as a learning project. This rewrite requires no AMS runtime.
-
 ## Serial / product key management
 
 Click a discovered file to edit its product key. Choose **Save**, **Remove**, or **Copy** to the Windows clipboard. Per-file serials are also saved automatically when changing the selected file or exporting. They are stored as unencrypted, locally readable JSON in `%LOCALAPPDATA%\\InstallScriptGenerator\\serials.json`, by the source file's absolute path.
@@ -79,3 +64,18 @@ The GitHub Actions workflow creates and packages the template automatically.
 ## UI contrast changes in alpha.5
 
 The selected and dropdown texts in German/English and export-format ComboBoxes now use an explicit high-contrast theme brush. Selection uses a green-tinted background in both themes. Checkboxes use green check marks, and the primary buttons retain green hover styling instead of turning into dark secondary buttons. Theme switching also updates all of these brushes at runtime.
+
+## Roadmap
+
+- [x] Migrate original v1.3 scanner and BAT/CMD/PS1 generator to C#.
+- [x] Responsive scanning, preview, bilingual UI, theme toggle and three-column dashboard.
+- [ ] Per-installer arguments, manual ordering, presets and stronger diagnostics.
+- [x] Portable launcher EXE export (embeds the generated script; installer files remain external).
+- [ ] Optional all-in-one EXE bundle with embedded installers.
+
+## Credits
+
+**Original Idea & Code by:** NetDaemon   
+**License:** MIT (see [LICENSE](LICENSE)).
+
+The original Install Script Generator v1.3 was written in AutoPlay Media Studio as a learning project. This rewrite requires no AMS runtime.
