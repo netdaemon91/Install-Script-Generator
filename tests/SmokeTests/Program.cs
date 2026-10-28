@@ -9,7 +9,7 @@ try
 {
     for (int i = 0; i < 4000; i++)
         File.WriteAllText(Path.Combine(nested, $"Install_{i:00000}.exe"), "");
-    File.WriteAllText(Path.Combine(root, "Package with spaces.msi"), "");
+    File.WriteAllText(Path.Combine(root, "Package with spaces.msi"), "testing");
     File.WriteAllText(Path.Combine(root, "Registry.reg"), "");
     File.WriteAllText(Path.Combine(nested, "Script.ps1"), "");
     File.WriteAllText(Path.Combine(root, "Archive.zip"), "");
@@ -21,6 +21,14 @@ try
 
     var found = await scanner.ScanAsync(root, selected, true, null, CancellationToken.None);
     Assert(found.Count == 4003, $"Expected 4003 files, got {found.Count}.");
+    Assert(found.All(item => item.IsIncluded), "Scan results must be included by default.");
+    var msi = found.Single(item => item.Extension == ".MSI");
+    Assert(msi.SizeBytes == 7 && msi.SizeLabel == "7 B",
+        "Dashboard file size metadata should be accurate.");
+    found[0].IsIncluded = false;
+    Assert(found.Count(item => item.IsIncluded) == 4002,
+        "Per-file include selection must be writable.");
+    found[0].IsIncluded = true;
     Assert(found.Select(x => x.FullPath).Distinct(StringComparer.OrdinalIgnoreCase).Count()
            == found.Count, "Duplicate search results.");
     Assert(found.Zip(found.Skip(1)).All(p =>
@@ -53,6 +61,17 @@ try
         "Absolute mode must preserve the full original file path.");
     Assert(!abs.Contains("\"%~dp0Install_00000.exe\""),
         "Absolute mode must not use the script-relative prefix.");
+
+    var selection = found.Take(2).ToArray();
+    selection[0].IsIncluded = false;
+    var selectedOnly = selection.Where(item => item.IsIncluded).ToArray();
+    string selectedOutput = Path.Combine(root, "only-selected.bat");
+    await ScriptGenerator.WriteAsync(selectedOutput, selectedOnly, batOptions);
+    var selectedScript = await File.ReadAllTextAsync(selectedOutput);
+    Assert(selectedScript.Contains("[1/1]") &&
+           !selectedScript.Contains(selection[0].Name),
+           "Selected-only export must omit excluded installers.");
+    selection[0].IsIncluded = true;
 
     string psOutput = Path.Combine(root, "output.ps1");
     var psOptions = batOptions with { Format = ExportFormat.PowerShell };

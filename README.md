@@ -7,13 +7,16 @@
 
 A Windows utility that scans folders and generates installation scripts. Originally created with AutoPlay Media Studio, now rebuilt in **C# / .NET 10 / WPF**.
 
-> **Status:** 2.0.0-alpha.5 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
+> **Status:** 2.0.0-alpha.6 — first C# rebuild. The EXE launcher exporter is available; embedding the installers themselves is planned.
 
 ## Features
 
 - Discover EXE, MSI, BAT, CMD, PS1, REG, VBS and AU3 files, and optionally custom extensions.
 - Recursive scanning, cancellation, inaccessible-folder handling, sorted results and virtualized file table.
 - Memory-friendly preview limited to 60 entries; full script output is streamed to disk without re-reading it after each command.
+- Live statistics for total files, distinct folders, cumulative file size and elapsed scan time; a richer 3-column dashboard with neon accents and a gradient header.
+- Include/exclude individual scanned files or use Select all / Select none. Script previews and exports contain only included files; search filtering changes visibility, not export selection.
+- Open the scanned folder or selected file's containing folder in Windows Explorer.
 - Export BAT, CMD or PowerShell (.ps1), with path selection and optional progress output or completion popup.
 - Dedicated handlers for MSI, REG, VBS and AU3 (AutoIt must be installed for AU3 files).
 - German and English interface, redesigned three-panel dashboard, searchable results, high-contrast Dark/Light Combobox controls, About dialog, website and repository links.
@@ -69,6 +72,7 @@ The selected and dropdown texts in German/English and export-format ComboBoxes n
 
 - [x] Migrate original v1.3 scanner and BAT/CMD/PS1 generator to C#.
 - [x] Responsive scanning, preview, bilingual UI, theme toggle and three-column dashboard.
+- [x] Dashboard statistics, per-file size column, optional export selection and bulk selection actions.
 - [ ] Per-installer arguments, manual ordering, presets and stronger diagnostics.
 - [x] Portable launcher EXE export (embeds the generated script; installer files remain external).
 - [ ] Optional all-in-one EXE bundle with embedded installers.
