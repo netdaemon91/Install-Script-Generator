@@ -484,7 +484,7 @@
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                              Checked="Included_Changed" Unchecked="Included_Changed"
+                              Click="Included_Click"
                               HorizontalAlignment="Center" VerticalAlignment="Center"
                               Margin="0"/>
                   </DataTemplate>

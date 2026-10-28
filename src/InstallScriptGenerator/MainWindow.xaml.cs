@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +20,8 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _scanCancellation;
     private bool _dark = true;
     private bool _ready;
+    private bool _changingInclude;
+    private TimeSpan _lastScanDuration = TimeSpan.Zero;
 
     private bool German => LanguageCombo.SelectedIndex != 1;
     private string T(string german, string english) => German ? german : english;
@@ -86,6 +89,16 @@ public partial class MainWindow : Window
         CopySerialButton.Content = T("Kopieren", "Copy");
         SaveSerialButton.Content = T("Speichern", "Save");
         RemoveSerialButton.Content = T("Entfernen", "Remove");
+        StatsTitle.Text = T("◉  Statistiken", "◉  Statistics");
+        StatFilesLabel.Text = T("Gefundene Dateien", "Files found");
+        StatFoldersLabel.Text = T("Ordner", "Folders");
+        StatSizeLabel.Text = T("Gesamtgröße", "Total size");
+        StatTimeLabel.Text = T("Suchdauer", "Scan time");
+        IncludeAllButton.Content = T("✓  Alle auswählen", "✓  Select all");
+        IncludeNoneButton.Content = T("☐  Alle abwählen", "☐  Select none");
+        OpenFolderButton.Content = T("Ordner öffnen", "Open folder");
+        RefreshStatistics();
+        RefreshSelectionSummary();
         if (_serialFile is null)
             SerialFileLabel.Text = T("Datei aus der Liste auswählen",
                 "Select a file in the list");
@@ -222,6 +235,82 @@ public partial class MainWindow : Window
             (query.Length == 0 ||
              item.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
              item.RelativePath.Contains(query, StringComparison.OrdinalIgnoreCase));
+        RefreshSelectionSummary();
+    }
+
+    private InstallerFile[] IncludedFiles() =>
+        _files.Where(file => file.IsIncluded).ToArray();
+
+    private void Included_Click(object sender, RoutedEventArgs e)
+    {
+        if (_ready && !_changingInclude) RefreshSelectionSummary();
+    }
+
+    private void IncludeAll_Click(object sender, RoutedEventArgs e) =>
+        SetAllIncluded(true);
+
+    private void IncludeNone_Click(object sender, RoutedEventArgs e) =>
+        SetAllIncluded(false);
+
+    private void SetAllIncluded(bool included)
+    {
+        _changingInclude = true;
+        try
+        {
+            foreach (var file in _files) file.IsIncluded = included;
+        }
+        finally { _changingInclude = false; }
+        RefreshSelectionSummary();
+    }
+
+    private void RefreshSelectionSummary()
+    {
+        if (!_ready) return;
+        var count = _files.Count(file => file.IsIncluded);
+        SelectedCountText.Text = T($"{count:N0} / {_files.Count:N0} ausgewählt",
+            $"{count:N0} / {_files.Count:N0} selected");
+        IncludeAllButton.IsEnabled = _files.Count > 0 && count < _files.Count;
+        IncludeNoneButton.IsEnabled = count > 0;
+        OpenFolderButton.IsEnabled = Directory.Exists(FolderTextBox.Text);
+        ExportButton.IsEnabled = count > 0 && _scanCancellation is null;
+        UpdatePreview();
+    }
+
+    private void RefreshStatistics()
+    {
+        if (!_ready) return;
+        StatFilesText.Text = _files.Count.ToString("N0");
+        StatFoldersText.Text = _files
+            .Select(file => Path.GetDirectoryName(file.RelativePath) ?? "")
+            .Distinct(StringComparer.OrdinalIgnoreCase).Count().ToString("N0");
+        var bytes = _files.Sum(file => file.SizeBytes);
+        StatSizeText.Text = bytes >= 1024L * 1024 * 1024
+            ? (bytes / (1024d * 1024 * 1024)).ToString("0.##") + " GB"
+            : bytes >= 1024 * 1024
+                ? (bytes / (1024d * 1024)).ToString("0.#") + " MB"
+                : bytes >= 1024
+                    ? (bytes / 1024d).ToString("0.#") + " KB"
+                    : bytes + " B";
+        StatTimeText.Text = _lastScanDuration.ToString(@"hh\:mm\:ss");
+    }
+
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var chosenFile = FilesGrid.SelectedItem as InstallerFile;
+        var folder = chosenFile is null
+            ? FolderTextBox.Text : Path.GetDirectoryName(chosenFile.FullPath);
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder)) return;
+        try
+        {
+            var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = true };
+            start.ArgumentList.Add(folder);
+            Process.Start(start);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, Title, MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void InvalidateScan()
@@ -229,19 +318,28 @@ public partial class MainWindow : Window
         if (!SaveSerial()) return;
         _scanCancellation?.Cancel();
         _files = Array.Empty<InstallerFile>();
+        _lastScanDuration = TimeSpan.Zero;
         FilesGrid.ItemsSource = null;
-        ExportButton.IsEnabled = false;
         PreviewTextBox.Text = T("Bitte Suche erneut starten.", "Run the scan again.");
+        RefreshStatistics();
+        RefreshSelectionSummary();
         StatusText.Text = T("Suchoptionen geändert.", "Scan options changed.");
     }
 
     private void UpdatePreview()
     {
         if (!_ready || _files.Count == 0) return;
+        var included = IncludedFiles();
+        if (included.Length == 0)
+        {
+            PreviewTextBox.Text = T("Keine Dateien für den Export ausgewählt.",
+                "No files selected for export.");
+            return;
+        }
         try
         {
             PreviewTextBox.Text = ScriptGenerator.Preview(
-                _files, SelectedOptions(), DefaultOutputPath());
+                included, SelectedOptions(), DefaultOutputPath());
         }
         catch (Exception ex)
         {
@@ -271,14 +369,17 @@ public partial class MainWindow : Window
 
         if (!SaveSerial()) return;
         _files = Array.Empty<InstallerFile>();
+        _lastScanDuration = TimeSpan.Zero;
         FilesGrid.ItemsSource = null;
-        ExportButton.IsEnabled = false;
         PreviewTextBox.Clear();
+        RefreshStatistics();
+        RefreshSelectionSummary();
         ScanButton.IsEnabled = false;
         CancelButton.IsEnabled = true;
         ScanProgressBar.IsIndeterminate = true;
         _scanCancellation = new CancellationTokenSource();
         var token = _scanCancellation.Token;
+        var stopwatch = Stopwatch.StartNew();
         var progress = new Progress<int>(count =>
             StatusText.Text = T($"{count:N0} Dateien geprüft...",
                 $"{count:N0} files examined..."));
@@ -288,16 +389,19 @@ public partial class MainWindow : Window
             _files = await _scanner.ScanAsync(
                 FolderTextBox.Text, selected, RecursiveCheckBox.IsChecked == true,
                 progress, token);
+            stopwatch.Stop();
+            _lastScanDuration = stopwatch.Elapsed;
             FilesGrid.ItemsSource = _files;
             ApplyResultsSearch();
             ResultsTitle.Text = T($"📂  Gefundene Dateien ({_files.Count:N0})",
                 $"📂  Found files ({_files.Count:N0})");
-            ExportButton.IsEnabled = _files.Count > 0;
+            RefreshStatistics();
+            RefreshSelectionSummary();
             StatusText.Text = T($"{_files.Count:N0} Dateien gefunden.",
                 $"{_files.Count:N0} files found.");
-            PreviewTextBox.Text = _files.Count == 0
-                ? T("Keine passenden Dateien gefunden.", "No matching files found.")
-                : ScriptGenerator.Preview(_files, SelectedOptions(), DefaultOutputPath());
+            if (_files.Count == 0)
+                PreviewTextBox.Text = T("Keine passenden Dateien gefunden.",
+                    "No matching files found.");
         }
         catch (OperationCanceledException)
         {
@@ -311,11 +415,13 @@ public partial class MainWindow : Window
         }
         finally
         {
+            stopwatch.Stop();
             _scanCancellation.Dispose();
             _scanCancellation = null;
             ScanButton.IsEnabled = true;
             CancelButton.IsEnabled = false;
             ScanProgressBar.IsIndeterminate = false;
+            RefreshSelectionSummary();
         }
     }
 
@@ -324,10 +430,11 @@ public partial class MainWindow : Window
 
     private async void Export_Click(object sender, RoutedEventArgs e)
     {
-        if (_files.Count == 0) return;
+        var includedFiles = IncludedFiles();
+        if (includedFiles.Length == 0) return;
         if (!SaveSerial()) return;
         var options = SelectedOptions();
-        if (options.IncludeSerials && _files.Any(item =>
+        if (options.IncludeSerials && includedFiles.Any(item =>
             options.Serials?.TryGetValue(item.FullPath, out var serial) == true &&
             !string.IsNullOrWhiteSpace(serial)))
         {
@@ -399,7 +506,7 @@ public partial class MainWindow : Window
         // Portable mode requires every installer beside the exported script/EXE.
         if (!options.UseAbsolutePaths)
         {
-            var collisions = _files.GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            var collisions = includedFiles.GroupBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault(group => group.Count() > 1);
             if (collisions is not null)
             {
@@ -415,7 +522,7 @@ public partial class MainWindow : Window
             }
 
             var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(dialog.FileName));
-            if (_files.Any(file => !string.Equals(
+            if (includedFiles.Any(file => !string.Equals(
                 Path.GetDirectoryName(Path.GetFullPath(file.FullPath)), outputDirectory,
                 StringComparison.OrdinalIgnoreCase)))
             {
@@ -432,7 +539,7 @@ public partial class MainWindow : Window
             }
         }
 
-        PreviewTextBox.Text = ScriptGenerator.Preview(_files, options, dialog.FileName);
+        PreviewTextBox.Text = ScriptGenerator.Preview(includedFiles, options, dialog.FileName);
         ExportButton.IsEnabled = false;
         StatusText.Text = options.Format == ExportFormat.LauncherExe
             ? T("EXE-Launcher wird erstellt...", "Creating standalone EXE launcher...")
@@ -443,10 +550,10 @@ public partial class MainWindow : Window
             if (options.Format == ExportFormat.LauncherExe)
             {
                 var template = Path.Combine(AppContext.BaseDirectory, "LauncherTemplate.exe");
-                await ExeExporter.WriteAsync(template, dialog.FileName, _files, exportOptions);
+                await ExeExporter.WriteAsync(template, dialog.FileName, includedFiles, exportOptions);
             }
             else
-                await ScriptGenerator.WriteAsync(dialog.FileName, _files, exportOptions);
+                await ScriptGenerator.WriteAsync(dialog.FileName, includedFiles, exportOptions);
             StatusText.Text = T("Skript erfolgreich exportiert.", "Script exported successfully.");
             MessageBox.Show(this, T("Skript gespeichert unter:", "Script saved to:") +
                 Environment.NewLine + dialog.FileName, Title,
@@ -460,7 +567,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            ExportButton.IsEnabled = _files.Count > 0;
+            RefreshSelectionSummary();
         }
     }
 
