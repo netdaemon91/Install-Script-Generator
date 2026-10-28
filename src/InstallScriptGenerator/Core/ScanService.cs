@@ -1,11 +1,47 @@
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace InstallScriptGenerator.Core;
 
-public sealed record InstallerFile(string FullPath, string RelativePath)
+/// <summary>A scan result with a user-controlled export selection.</summary>
+public sealed class InstallerFile : INotifyPropertyChanged
 {
+    private bool _isIncluded = true;
+
+    public InstallerFile(string fullPath, string relativePath, long sizeBytes = 0)
+    {
+        FullPath = fullPath;
+        RelativePath = relativePath;
+        SizeBytes = sizeBytes;
+    }
+
+    public string FullPath { get; }
+    public string RelativePath { get; }
     public string Name => Path.GetFileName(FullPath);
     public string Extension => Path.GetExtension(FullPath).ToUpperInvariant();
+    public long SizeBytes { get; }
+
+    public string SizeLabel => SizeBytes switch
+    {
+        < 1024 => SizeBytes + " B",
+        < 1024 * 1024 => (SizeBytes / 1024d).ToString("0.#") + " KB",
+        < 1024L * 1024 * 1024 => (SizeBytes / (1024d * 1024)).ToString("0.#") + " MB",
+        _ => (SizeBytes / (1024d * 1024 * 1024)).ToString("0.##") + " GB"
+    };
+
+    public bool IsIncluded
+    {
+        get => _isIncluded;
+        set
+        {
+            if (_isIncluded == value) return;
+            _isIncluded = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsIncluded)));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
 
 public sealed class ScanService
@@ -37,7 +73,11 @@ public sealed class ScanService
                 if (extensions.Contains("*") ||
                     extensions.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
                 {
-                    results.Add(new InstallerFile(file, Path.GetRelativePath(root, file)));
+                    long size = 0;
+                    try { size = new FileInfo(file).Length; }
+                    catch (IOException) { /* File disappeared during scan. */ }
+                    catch (UnauthorizedAccessException) { /* Size may be unavailable. */ }
+                    results.Add(new InstallerFile(file, Path.GetRelativePath(root, file), size));
                 }
 
                 if ((examined & 511) == 0) progress?.Report(examined);
